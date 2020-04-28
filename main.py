@@ -113,3 +113,4 @@ if __name__ == '__main__':
     fb = Facebook()
     fb.log_in(email, password)
     fb.download_photos_of_me()
+    print("test")
