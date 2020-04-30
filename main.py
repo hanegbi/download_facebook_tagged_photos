@@ -63,6 +63,7 @@ class Facebook:
                 self.wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, self.VIDEO_ELEMENT)))
                 time.sleep(3)
             except:
+                time.sleep(1)
                 img = self.driver.find_element(By.CSS_SELECTOR, self.PHOTO_ELEMENT)
                 src = img.get_attribute('src')
                 src_list.append(src)
