@@ -13,10 +13,14 @@ from selenium.webdriver.support import expected_conditions as ec
 class Facebook:
     URL = 'https://www.facebook.com/'
     USER_NAME = "//*[@id='u_0_a']/div[1]/div[1]/div/a"
-    NEXT_ELEMENT = '//*[@id="photos_snowlift"]/div[2]/div/div[1]/div[1]/div[1]/a[2]'
-    PHOTO_ELEMENT = '//*[@id="photos_snowlift"]/div[2]/div/div[1]/div[1]/div[1]/div[1]/div[3]/img'
-    PHOTO_ELEMENT = '//*[@id="photos_snowlift"]/div[2]/div/div[1]/div[1]/div[1]/div[1]/div[3]/img'
-    VIDEO_ELEMENT = 'videoStageContainer'
+    PHOTO_THUMB_ELEMENT = 'img.opwvks06.hop1g133.linmgsc8.t63ysoy8.bixrwtb6'
+    VIDEO_THUMB_ELEMENT = 'span.oi732d6d.ik7dh3pa.d2edcug0.qv66sw1b.c1et5uql.a8c37x1j.hop8lmos.enqfppq2.e9vueds3' \
+                          '.j5wam9gi.knj5qynh.ljqsnud1'
+    PHOTO_ELEMENT = 'img.idiwt2bm.d2edcug0.dbpd2lw6'
+    NEXT_ELEMENT = '//*[@id="mount_0_0"]/div/div/div[4]/div/div/div[1]/div/div[3]/div[2]/div[1]/div/div[1]/div[' \
+                   '2]/div[1]/div[2]/div'
+    VIDEO_ELEMENT = 'div.tv7at329.b5wmifdl.pmk7jnqg.kfkz5moi.rk01pc8j.py2didcb.hwaazqwg.kmdw4o4n.l23jz15m.e4zzj2sf' \
+                    '.thwo4zme.kr9hpln1 '
 
     def __init__(self):
         self.options = webdriver.ChromeOptions()
@@ -39,10 +43,6 @@ class Facebook:
         password_ele.send_keys(Keys.RETURN)
         time.sleep(3)
 
-    def _get_username(self):
-        username_class = self.driver.find_element(By.XPATH, self.USER_NAME)
-        return username_class.get_attribute('href').replace(self.URL, '')
-
     def _scroll_down(self):
         last_height = self.driver.execute_script("return document.body.scrollHeight")
         while True:
@@ -58,17 +58,19 @@ class Facebook:
         src_list = []
         photo_id = 1
         while photo_id <= self.photos_count:
+            time.sleep(2)
             try:
-                self.wait.until(ec.presence_of_element_located((By.CLASS_NAME, self.VIDEO_ELEMENT)))
+                self.wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, self.VIDEO_ELEMENT)))
+                time.sleep(3)
             except:
-                img = self.wait.until(ec.presence_of_element_located((By.XPATH, self.PHOTO_ELEMENT)))
+                img = self.driver.find_element(By.CSS_SELECTOR, self.PHOTO_ELEMENT)
                 src = img.get_attribute('src')
                 src_list.append(src)
                 print(f'{photo_id}\t{src}')
                 photo_id += 1
             finally:
                 next_photo = self.driver.find_element(By.XPATH, self.NEXT_ELEMENT)
-                next_photo.click()
+                self.driver.execute_script("arguments[0].click();", next_photo)
         return src_list
 
     @staticmethod
@@ -87,11 +89,14 @@ class Facebook:
             threading.Thread(target=self._download_photo, args=(src, photo_id,)).start()
 
     def download_photos_of_me(self):
-        self.driver.get(self.URL + self._get_username() + '/photos')
+        self.driver.get(self.URL + 'me/photos')
         self._scroll_down()
-        self.photos_count = len(self.driver.find_elements(By.CLASS_NAME, 'uiMediaThumbImg'))
+        self.photos_count = len(self.driver.find_elements(By.CSS_SELECTOR, 'div.b5fwa0m2.pmk7jnqg.plgsh5y4'))
+        videos_count = len(self.driver.find_elements(By.CSS_SELECTOR, self.VIDEO_THUMB_ELEMENT))
+        self.photos_count = self.photos_count-videos_count
         print(f'You got {self.photos_count} to be downloaded')
-        self.driver.find_element_by_class_name('uiMediaThumbImg').click()
+        photo_thumb = self.driver.find_element(By.CSS_SELECTOR, self.PHOTO_THUMB_ELEMENT)
+        self.driver.execute_script("arguments[0].click();", photo_thumb)
         src_list = self._create_photos_src_list()
         self.driver.quit()
         self._create_folder()
@@ -113,4 +118,3 @@ if __name__ == '__main__':
     fb = Facebook()
     fb.log_in(email, password)
     fb.download_photos_of_me()
-    print("test")
